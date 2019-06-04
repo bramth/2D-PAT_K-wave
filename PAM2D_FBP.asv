@@ -3,7 +3,7 @@ clear all, close all, clc;
 % load the initial pressure distribution from an image and scale
 data = load('data/vessel_2D_(DRIVE)/Vascular_set_c0_inhomogeneous_new_fixed_mu.mat');
 
-padsize = [200,200];
+padsize = [100,100];
 data.Train_H = padarray(data.Train_H, padsize,'both');
 data.Test_H = padarray(data.Test_H, padsize,'both');
 
@@ -22,16 +22,14 @@ kgrid = kWaveGrid(Nx, dx, Ny, dy);
 
 % define a Cartesian sensor mask of a centered circle with 50 sensor elements
 sensor_radius = 4e-3; % [m]
-sensor_angle = 2*pi;        % [rad]
+sensor_angle = pi;        % [rad]
 sensor_pos = [0, 0];        % [m]
-num_sensor_points = 64;
+num_sensor_points = 45;
 sensor.mask = makeCartCircle(sensor_radius, num_sensor_points, sensor_pos, sensor_angle);
-sensor.frequency_response = [6.25e6,80];
-%sensor.directivity_angle
-%sensor.directivity_size
 
-% source.p0 = data.Train_H(:,:,100);
-% show_result(source.p0,source.p0,kgrid,sensor.mask)
+source.p0 = data.Train_H(:,:,100);
+show_result(source.p0,source.p0,kgrid,sensor.mask)
+
 
 %% -------------------------------------------- %%
 

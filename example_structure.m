@@ -14,7 +14,7 @@ kgrid = kWaveGrid(Nx, dx, Ny, dy);
 
 p0_magnitude = 2;
 padsize = [50,50];
-p0_norm = loadImage('img/EXAMPLE_source_one.png');
+p0_norm = loadImage('data/EXAMPLE_source_one.png');
 p0_norm = padarray(p0_norm, padsize,'both');
 
 p0_norm = resize(p0_norm, [Nx, Ny]);
