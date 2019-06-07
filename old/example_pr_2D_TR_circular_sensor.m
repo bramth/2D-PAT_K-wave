@@ -77,6 +77,8 @@ input_args = {'Smooth', false, 'PMLInside', false, 'PlotPML', false};
 % run the simulation
 sensor_data = kspaceFirstOrder2D(kgrid, medium, source, sensor, input_args{:});
 
+% ------------------------------------- %
+
 % add noise to the recorded sensor data
 signal_to_noise_ratio = 40;	% [dB]
 sensor_data = addNoise(sensor_data, signal_to_noise_ratio, 'peak');
@@ -100,6 +102,9 @@ sensor.time_reversal_boundary_data = sensor_data;
 
 % run the time-reversal reconstruction
 p0_recon = kspaceFirstOrder2D(kgrid_recon, medium, source, sensor, input_args{:});
+
+% ----------------- %
+
 
 % create a binary sensor mask of an equivalent continuous circle 
 sensor_radius_grid_points = round(sensor_radius / kgrid_recon.dx);
