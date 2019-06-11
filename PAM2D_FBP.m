@@ -5,9 +5,15 @@
 % - Make function wise as to push settings (radius, num_sensor, etc)
 % - Loop over all images
 
-clear all, close all, clc;
+clearvars;
+close all;
+clc;
+
+addpath './code' 
 
 name = input('Runtime name: ','s');
+n = 12; 
+name = [name, '_', char(n)]; 
 
 % load the initial pressure distribution from an image and scale
 data = load('data/vessel_2D_(DRIVE)/Vascular_set_c0_inhomogeneous_new_fixed_mu.mat');
@@ -49,7 +55,7 @@ sensor.mask = makeCartCircle(sensor_radius, num_sensor_points, sensor_pos, senso
 % -------------------------------------------- %
 
 % take an image
-source.p0 = data.Train_H(:,:,12);
+source.p0 = data.Train_H(:,:,n);
 
 % smooth the initial pressure distribution and restore the magnitude
 source.p0 = smooth(kgrid, source.p0, true);
@@ -93,64 +99,10 @@ sensor.time_reversal_boundary_data = sensor_data;
 % run the time reversal reconstruction
 p0_recon = kspaceFirstOrder2D(kgrid_recon, medium, source, sensor, input_args{:}); 
 
+% from gpu-memory to local memory
 p0_recon = gather(p0_recon);
 
 % visualize
 fig = show_result(p0_recon,p0_orig,kgrid,kgrid_recon,sensor.mask,sensor_data);
 save_figure(fig,name);
 save_fbp(p0_recon,padsize,name)
-
-function [fig] = show_result(p0_recon,p0_orig,kgrid,kgrid_recon,cart_sensor_mask,sensor_data)
-    fig = figure;
-    pause(0.00001);
-    frame_h = get(handle(gcf),'JavaFrame');
-    set(frame_h,'Maximized',1);
-    pause(0.00001);
-
-    subplot(1,3,1);
-    imagesc(cart2grid(kgrid, cart_sensor_mask)+p0_orig, [-1, 1]);
-    ylabel('x-position [mm]');
-    xlabel('y-position [mm]');
-    title('Original image');
-    axis image;
-    colormap(getColorMap);
-
-    subplot(1,3,2);
-    imagesc(cart2grid(kgrid_recon, cart_sensor_mask)+p0_recon, [-1, 1]);
-    ylabel('x-position [mm]');
-    xlabel('y-position [mm]');
-    title('Reconstructed image');
-    axis image;
-    colormap(getColorMap);
-
-    % plot the simulated sensor data
-    subplot(1,3,3);
-    imagesc(sensor_data, [-1, 1]);
-    colormap(getColorMap);
-    ylabel('Sensor Position');
-    xlabel('Time Step');
-    colorbar;
-   
-    return
-end
-
-function [] = save_figure(fig,name)
-    folder_name = ['img/' date];
-    mkdir(folder_name)
-    
-    saveas(fig,[folder_name, '/', name])
-    saveas(fig,[folder_name, '/', name,'.png'])
-    return
-end
-
-function [] = save_fbp(img,padding,name)
-    folder_name = ['img/' date];
-    mkdir(folder_name)
-    
-    img = img(padding(1)+1:end-padding(1),...
-              padding(2)+1:end-padding(2));
-    
-    imwrite(img,[folder_name, '/fbp_', name,'.png'])
-end
-
-
