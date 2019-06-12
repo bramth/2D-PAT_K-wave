@@ -4,6 +4,7 @@
 % - Add properties of sensor
 % - Make function wise as to push settings (radius, num_sensor, etc)
 % - Loop over all images
+% - Fix FBP blurriness
 
 clearvars;
 close all;
@@ -13,7 +14,7 @@ addpath './code'
 
 name = input('Runtime name: ','s');
 n = 12; 
-name = [name, '_', char(n)]; 
+name = strcat(name,'_',string(n)); 
 
 % load the initial pressure distribution from an image and scale
 data = load('data/vessel_2D_(DRIVE)/Vascular_set_c0_inhomogeneous_new_fixed_mu.mat');
@@ -40,11 +41,11 @@ input_args = {'Smooth', false, ...
               'PMLInside', false, ...
               'PlotPML', false, ...
               'PlotSim', false, ...
-              'DataCast','gpuArray-double'};
+              'DataCast','gpuArray-single'};
 
 % define a Cartesian sensor mask of a centered circle with 50 sensor elements
-sensor_radius = 45e-3; % [m]
-sensor_angle = pi;        % [rad]
+sensor_radius = 45e-3;      % [m]
+sensor_angle = pi;          % [rad]
 sensor_pos = [0, 0];        % [m]
 num_sensor_points = 64; % 256; %
 sensor.mask = makeCartCircle(sensor_radius, num_sensor_points, sensor_pos, sensor_angle);
@@ -65,6 +66,7 @@ source.p0 = smooth(kgrid, source.p0, true);
 %medium.sound_speed(source.p0>0.02) = 1600;          % [m/s]
 %medium.density = 1040*ones(Nx,Ny);                  % [kg/m^3]
 medium.sound_speed = 1500;
+% FIX: array sizes to new comp grid
 
 % create the time array
 kgrid.makeTime(medium.sound_speed);
