@@ -58,6 +58,9 @@ sensor.mask = makeCartCircle(sensor_radius, num_sensor_points, sensor_pos, senso
 % take an image
 source.p0 = data.Train_H(:,:,n);
 
+% filter low background signal
+source.p0 = source.p0 .* source.p0>0.02;
+
 % smooth the initial pressure distribution and restore the magnitude
 source.p0 = smooth(kgrid, source.p0, true);
 
@@ -105,6 +108,9 @@ p0_recon = kspaceFirstOrder2D(kgrid_recon, medium, source, sensor, input_args{:}
 p0_recon = gather(p0_recon);
 
 % visualize
-fig = show_result(p0_recon,p0_orig,kgrid,kgrid_recon,sensor.mask,sensor_data);
+show_slice(p0_orig,kgrid,p0_recon,kgrid_recon,'x',0);
+fig = show_result(p0_orig,kgrid,p0_recon,kgrid_recon,sensor.mask);
 save_figure(fig,name);
 save_fbp(p0_recon,padsize,name)
+
+

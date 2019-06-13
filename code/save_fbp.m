@@ -5,6 +5,6 @@ function [] = save_fbp(img,padding,name)
     img = img(padding(1)+1:end-padding(1),...
               padding(2)+1:end-padding(2));
     
-    imwrite(img,folder_name,strcat('/fbp_',name,'.png'))
+    imwrite(img,strcat('/fbp_',name,'.png'))
 end
 
