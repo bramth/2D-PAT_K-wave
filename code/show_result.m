@@ -5,7 +5,7 @@ function [fig] = show_result(p0_orig,kgrid,p0_recon,kgrid_recon,cart_sensor_mask
     set(frame_h,'Maximized',1);
     pause(0.0001);
 
-    subplot(1,3,1);
+    subplot(1,2,1);
     imagesc(cart2grid(kgrid, cart_sensor_mask)+p0_orig, [-1, 1]);
     ylabel('x-position [mm]');
     xlabel('y-position [mm]');

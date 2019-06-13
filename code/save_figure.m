@@ -1,8 +1,8 @@
 function [] = save_figure(fig,name)
-    folder_name = ['img/' date];
+    folder_name = strcat('img/',date);
     mkdir(folder_name)
     
-    saveas(fig,strcat(folder_name,'/',name))
-    saveas(fig,strcat(folder_name,'/',name,'.png'))
+    saveas(fig,strcat(char(folder_name),'/',char(name)))
+    saveas(fig,strcat(char(folder_name),'/',char(name),'.png'))
     return
 end

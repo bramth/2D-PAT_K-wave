@@ -4,7 +4,7 @@
 % - Add properties of sensor
 % - Make function wise as to push settings (radius, num_sensor, etc)
 % - Loop over all images
-% - Fix FBP blurriness
+% - Fix FBP blurriness: ?
 
 clearvars;
 close all;
@@ -14,7 +14,7 @@ addpath './code'
 
 name = input('Runtime name: ','s');
 n = 12; 
-name = strcat(name,'_',string(n)); 
+name = strcat(name,'_',num2str(n)); 
 
 % load the initial pressure distribution from an image and scale
 data = load('data/vessel_2D_(DRIVE)/Vascular_set_c0_inhomogeneous_new_fixed_mu.mat');
