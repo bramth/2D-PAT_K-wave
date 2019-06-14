@@ -4,7 +4,7 @@ function [p0_recon,kgrid_recon] = backward(sensor_data,sensor,kgrid,dim,input_ar
     p = inputParser;
     
     defaultSpeed = 1500;
-    defaultAbsorption = true;
+    defaultAbsorption = false;
     
     addRequired(p,'sensor_data')
     addRequired(p,'sensor')
@@ -43,8 +43,10 @@ function [p0_recon,kgrid_recon] = backward(sensor_data,sensor,kgrid,dim,input_ar
     medium.sound_speed = p.Results.SoundSpeed;
     
     if p.Results.Absorption == true
+        %medium.alpha_power = 1.5;      
+        %medium.alpha_coeff = 3;                     % [dB/(MHz^y cm)]
         % define the cutoff frequency for the filter
-        f_cutoff = 3e6;                     % [Hz]
+        f_cutoff = 4e6;                     % [Hz]
 
         % create the filter to regularise the absorption parameters
         medium.alpha_filter = getAlphaFilter(kgrid_recon, medium, f_cutoff);

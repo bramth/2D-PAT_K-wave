@@ -6,6 +6,8 @@ function [sensor_data,kgrid] = forward(p0,sensor,dim,input_args,varargin)
     defaultThreshold = false;
     defaultSmooth = true; 
     defaultSpeed = 1500;
+    defaultAbsorption = false;
+    
     
     addRequired(p,'p0')
     addRequired(p,'sensor')
@@ -14,6 +16,7 @@ function [sensor_data,kgrid] = forward(p0,sensor,dim,input_args,varargin)
     addOptional(p,'Threshold',defaultThreshold,@islogical);
     addOptional(p,'Smooth',defaultSmooth,@islogical);
     addOptional(p,'SoundSpeed',defaultSpeed,@isnumeric);
+    addOptional(p,'Absorption',defaultAbsorption,@islogical);
     
     parse(p,p0,sensor,dim,input_args,varargin{:})
     
@@ -43,6 +46,11 @@ function [sensor_data,kgrid] = forward(p0,sensor,dim,input_args,varargin)
     %medium.sound_speed(source.p0>0.02) = 1600;          % [m/s]
     %medium.density = 1040*ones(Nx,Ny);                  % [kg/m^3]
     medium.sound_speed = p.Results.SoundSpeed;
+    
+    if p.Results.Absorption == true
+        %medium.alpha_power = 1.5;      
+        %medium.alpha_coeff = 3;                     % [dB/(MHz^y cm)]
+    end
 
     % create the time array
     kgrid.makeTime(medium.sound_speed);

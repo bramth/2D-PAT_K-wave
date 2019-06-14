@@ -6,6 +6,10 @@
 % - Loop over all images
 % - Fix FBP blurriness: ?
 % - Fix FBP optical flow discrepancy due to different grid
+% - COLORBAR grenzen aanpassen
+% - interpolatie aanzetten, 64 uniform. 
+% - proberen middelpunt aan onderzijde. 
+% - of plaatje *2, of plaatje/2
 % -------------------------------------------- %
                 %%%%%%%%%%%%%%%%
                 %     VARS     %
@@ -26,7 +30,7 @@ name = input('Runtime name: ','s');
 curdate = make_folder();
 
 % plot ?
-plotting = false;
+plotting = true;
 
 % type
 imtype = "train";
@@ -63,7 +67,7 @@ imgset = padarray(imgset, padsize,'both');
 
 % define a Cartesian sensor mask of a centered circle with 50 sensor elements
 sensor_radius = 45e-3;      % [m]
-sensor_angle = pi;          % [rad]
+sensor_angle = 2*pi; %pi    % [rad]
 sensor_pos = [0, 0];        % [m]
 num_sensor_points = 64;     % 256;
 sensor.mask = makeCartCircle(sensor_radius, num_sensor_points, sensor_pos, sensor_angle);
@@ -82,7 +86,7 @@ for n = 1:N
     clc;
     waitbar(n/N,f,sprintf('%d of %d',n,N));
     
-    % n = 12; % DANGER : CHANGE
+    n = 12; % DANGER : CHANGE
     
     p0_orig = imgset(:,:,n);
     
@@ -90,7 +94,7 @@ for n = 1:N
                                   sensor,...
                                   [x,y],...
                                   input_args,...
-                                  'Threshold',true);
+                                  'Threshold',false);
                              
     [p0_recon,kgrid_recon] = backward(sensor_data,...
                                       sensor,...
@@ -114,6 +118,6 @@ for n = 1:N
     
     save_fbp(p0_orig,p0_recon,cur_name,curdate,imtype); 
     
-    % break
+    break
 end
 delete(f)
