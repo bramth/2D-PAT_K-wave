@@ -1,11 +1,14 @@
-function [] = save_fbp(img,padding,name)
-    folder_name = strcat('img/',date);
-    mkdir(folder_name)
-    
-    img = img(padding(1)+1:end-padding(1),...
-              padding(2)+1:end-padding(2));
-    
-    writedir = strcat(char(folder_name),'/fbp_',char(name),'.png');
+function [] = save_fbp(img,imgfbp,name,curdate,imtype)
+    % save fbp
+    if imtype == 'train'
+        folder_name = strcat('img/',curdate,'/train');
+    elseif imtype == 'test'
+        folder_name = strcat('img/',curdate,'/test');
+    end
+
+    writedir = strcat(char(folder_name),'/',char(name),'.png');
     imwrite(img,writedir)
+    writedir = strcat(char(folder_name),'/',char(name),'_fbp.png');
+    imwrite(imgfbp,writedir)
 end
 

@@ -9,7 +9,7 @@ function [fig] = show_slice(p0_orig,kgrid,p0_recon,kgrid_recon,dim,slice_pos)
     end
     
     % take slice as half
-    if slice_pos == 0
+    if slice_pos == 'half' 
         slice_pos = size(p0_orig,ndim)/2;
     end      
     

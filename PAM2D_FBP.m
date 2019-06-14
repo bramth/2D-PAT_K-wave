@@ -5,36 +5,31 @@
 % - Make function wise as to push settings (radius, num_sensor, etc)
 % - Loop over all images
 % - Fix FBP blurriness: ?
+% - Fix FBP optical flow discrepancy due to different grid
+% -------------------------------------------- %
+                %%%%%%%%%%%%%%%%
+                %     VARS     %
+                %%%%%%%%%%%%%%%%
 
+% delete old variables
 clearvars;
 close all;
 clc;
 
-addpath './code' 
+% add subfolder to path
+addpath './code'
 
+% make saving folder
+curdate = make_folder();
+
+% name ?
 name = input('Runtime name: ','s');
-n = 12; 
-name = strcat(name,'_',num2str(n)); 
 
-% load the initial pressure distribution from an image and scale
-data = load('data/vessel_2D_(DRIVE)/Vascular_set_c0_inhomogeneous_new_fixed_mu.mat');
+% plot ?
+plotting = false;
 
-N_pre = size(data.Train_H);
-
-x = 100e-3;                     % total grid size [m]
-y = 100e-3;                     % total grid size [m]
-padsize = [N_pre(1), N_pre(2)];            % padding on both sides
-data.Train_H = padarray(data.Train_H, padsize,'both');
-data.Test_H = padarray(data.Test_H, padsize,'both');
-
-N = size(data.Train_H);
-
-% create the computational grid
-Nx = N(1);       % number of grid points in the x (row) direction
-Ny = N(2);       % number of grid points in the y (column) direction
-dx = x / Nx;     % grid point spacing in the x direction [m]
-dy = y / Ny;     % grid point spacing in the y direction [m]
-kgrid = kWaveGrid(Nx, dx, Ny, dy);
+% type
+imtype = "train";
 
 % set the input options
 input_args = {'Smooth', false, ...
@@ -42,12 +37,35 @@ input_args = {'Smooth', false, ...
               'PlotPML', false, ...
               'PlotSim', false, ...
               'DataCast','gpuArray-single'};
+          
+% grid size
+x = 100e-3;      % total grid size [m]
+y = 100e-3;      % total grid size [m]
+
+% -------------------------------------------- %
+                %%%%%%%%%%%%%%%%
+                %     INIT     %
+                %%%%%%%%%%%%%%%%
+
+% load the initial pressure distribution from an imageset
+data = load('data/vessel_2D_(DRIVE)/Vascular_set_c0_inhomogeneous_new_fixed_mu.mat');
+
+if imtype == "train"
+    imgset = data.Train_H;
+elseif imtype == "test"
+    imgset = data.Test_H; 
+end
+
+N_pre = size(imgset);
+
+padsize = [N_pre(1), N_pre(2)]; % padding on both sides
+imgset = padarray(imgset, padsize,'both');
 
 % define a Cartesian sensor mask of a centered circle with 50 sensor elements
 sensor_radius = 45e-3;      % [m]
 sensor_angle = pi;          % [rad]
 sensor_pos = [0, 0];        % [m]
-num_sensor_points = 64; % 256; %
+num_sensor_points = 64;     % 256;
 sensor.mask = makeCartCircle(sensor_radius, num_sensor_points, sensor_pos, sensor_angle);
 %sensor.frequency_response = [6.25e6, 80];   % [center freq [Hz], %]
 %sensor.directivity_angle
@@ -55,62 +73,47 @@ sensor.mask = makeCartCircle(sensor_radius, num_sensor_points, sensor_pos, senso
 
 % -------------------------------------------- %
 
-% take an image
-source.p0 = data.Train_H(:,:,n);
-
-% filter low background signal
-source.p0 = source.p0 .* source.p0>0.02;
-
-% smooth the initial pressure distribution and restore the magnitude
-source.p0 = smooth(kgrid, source.p0, true);
-
-% define the medium properties
-%medium.sound_speed = 1500*ones(Nx, Ny);             % [m/s]
-%medium.sound_speed(source.p0>0.02) = 1600;          % [m/s]
-%medium.density = 1040*ones(Nx,Ny);                  % [kg/m^3]
-medium.sound_speed = 1500;
-% FIX: array sizes to new comp grid
-
-% create the time array
-kgrid.makeTime(medium.sound_speed);
-
-% run the simulation
-sensor_data = kspaceFirstOrder2D(kgrid, medium, source, sensor,input_args{:});
-
-
-% -------------------------------------------- %
-
-% add noise to the recorded sensor data
-signal_to_noise_ratio = 40;	% [dB]
-sensor_data = addNoise(sensor_data, signal_to_noise_ratio, 'peak');
-
-% create a new computation grid to avoid inverse crime
-Nx = ceil(Nx/50)*50;           % number of grid points in the x direction
-Ny = ceil(Ny/50)*50;           % number of grid points in the y direction
-dx = x/Nx;          % grid point spacing in the x direction [m]
-dy = y/Ny;          % grid point spacing in the y direction [m]
-kgrid_recon = kWaveGrid(Nx, dx, Ny, dy);
-
-% use the same time array for the reconstruction
-kgrid_recon.setTime(kgrid.Nt, kgrid.dt);
-
-% reset the initial pressure
-p0_orig = source.p0;
-source.p0 = 0;
-
-% assign the time reversal data
-sensor.time_reversal_boundary_data = sensor_data;
-
-% run the time reversal reconstruction
-p0_recon = kspaceFirstOrder2D(kgrid_recon, medium, source, sensor, input_args{:}); 
-
-% from gpu-memory to local memory
-p0_recon = gather(p0_recon);
-
-% visualize
-show_slice(p0_orig,kgrid,p0_recon,kgrid_recon,'x',0);
-fig = show_result(p0_orig,kgrid,p0_recon,kgrid_recon,sensor.mask);
-save_figure(fig,name);
-save_fbp(p0_recon,padsize,name)
-
-
+                %%%%%%%%%%%%%%%%
+                %     LOOP     %
+                %%%%%%%%%%%%%%%%
+f = waitbar(0,'Starting FBP...');
+N = length(imgset);
+for n = 1:N
+    clc;
+    waitbar(n/N,f,sprintf('%d of %d',n,N));
+    
+    n = 12;
+    
+    p0_orig = imgset(:,:,n);
+    
+    [sensor_data,kgrid] = forward(p0_orig,...
+                                  sensor,...
+                                  [x,y],...
+                                  input_args,...
+                                  'Threshold',true);
+                             
+    [p0_recon,kgrid_recon] = backward(sensor_data,...
+                                      sensor,...
+                                      kgrid,...
+                                      [x,y],...
+                                      input_args);
+             
+    % visualize
+    cur_name = strcat(name,'_',num2str(n));
+    
+    if plotting == true
+        fig = show_result(p0_orig,kgrid,p0_recon,kgrid_recon,sensor.mask);
+        save_figure(fig,cur_name,curdate);
+        fig = show_slice(p0_orig,kgrid,p0_recon,kgrid_recon,'x','half');
+        save_figure(fig,strcat(cur_name,'_slice'),curdate);
+    end
+    
+    p0_orig = unpad(p0_orig,padsize);
+    p0_recon = unpad(p0_recon,true); 
+    p0_recon = resize(p0_recon,size(p0_orig));
+    
+    save_fbp(p0_orig,p0_recon,cur_name,curdate,imtype); 
+    
+    break
+end
+delete(f)
