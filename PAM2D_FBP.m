@@ -19,11 +19,11 @@ clc;
 % add subfolder to path
 addpath './code'
 
-% make saving folder
-curdate = make_folder();
-
 % name ?
 name = input('Runtime name: ','s');
+
+% make saving folder
+curdate = make_folder();
 
 % plot ?
 plotting = false;
@@ -82,7 +82,7 @@ for n = 1:N
     clc;
     waitbar(n/N,f,sprintf('%d of %d',n,N));
     
-    n = 12;
+    % n = 12; % DANGER : CHANGE
     
     p0_orig = imgset(:,:,n);
     
@@ -114,6 +114,6 @@ for n = 1:N
     
     save_fbp(p0_orig,p0_recon,cur_name,curdate,imtype); 
     
-    break
+    % break
 end
 delete(f)

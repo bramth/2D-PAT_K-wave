@@ -4,6 +4,7 @@ function [p0_recon,kgrid_recon] = backward(sensor_data,sensor,kgrid,dim,input_ar
     p = inputParser;
     
     defaultSpeed = 1500;
+    defaultAbsorption = true;
     
     addRequired(p,'sensor_data')
     addRequired(p,'sensor')
@@ -11,6 +12,7 @@ function [p0_recon,kgrid_recon] = backward(sensor_data,sensor,kgrid,dim,input_ar
     addRequired(p,'dim')
     addRequired(p,'input_args',@iscell)
     addOptional(p,'SoundSpeed',defaultSpeed,@isnumeric);
+    addOptional(p,'Absorption',defaultAbsorption,@islogical);
     
     parse(p,sensor_data,sensor,kgrid,dim,input_args,varargin{:})
     
@@ -39,7 +41,17 @@ function [p0_recon,kgrid_recon] = backward(sensor_data,sensor,kgrid,dim,input_ar
     %medium.sound_speed(source.p0>0.02) = 1600;          % [m/s]
     %medium.density = 1040*ones(Nx,Ny);                  % [kg/m^3]
     medium.sound_speed = p.Results.SoundSpeed;
-    % FIX: array sizes to new comp grid
+    
+    if p.Results.Absorption == true
+        % define the cutoff frequency for the filter
+        f_cutoff = 3e6;                     % [Hz]
+
+        % create the filter to regularise the absorption parameters
+        medium.alpha_filter = getAlphaFilter(kgrid_recon, medium, f_cutoff);
+
+        % reverse the sign of the absorption proportionality coefficient
+        medium.alpha_sign = [-1, 1];        % [absorption, dispersion];
+    end
     
     % run the time reversal reconstruction
     p0_recon = kspaceFirstOrder2D(kgrid_recon, medium, source, sensor, input_args{:}); 
