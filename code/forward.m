@@ -23,6 +23,11 @@ function [sensor_data,kgrid] = forward(p0,sensor,dim,input_args,varargin)
     % add to source
     source.p0 = p.Results.p0;
     
+    % remove old sensor data
+    if isfield(sensor,'time_reversal_boundary_data')
+        sensor = rmfield(sensor,'time_reversal_boundary_data'); 
+    end
+    
     % create the computational grid
     N = size(source.p0);
     Nx = N(1);       % number of grid points in the x (row) direction
@@ -33,7 +38,7 @@ function [sensor_data,kgrid] = forward(p0,sensor,dim,input_args,varargin)
     
     % filter low background signal
     if p.Results.Threshold
-        source.p0 = source.p0 .* source.p0>0.02;
+        source.p0 = source.p0 .* (source.p0>0.02);
     end
     
     % smooth the initial pressure distribution and restore the magnitude

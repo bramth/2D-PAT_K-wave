@@ -7,7 +7,7 @@
 % x Fix FBP blurriness: ?
 % - Fix FBP optical flow discrepancy due to different grid
 % x COLORBAR grenzen aanpassen
-% - interpolatie aanzetten, 64 uniform. 
+% x interpolatie aanzetten, 64 uniform. 
 % - proberen middelpunt aan onderzijde. 
 % x of plaatje *2, of plaatje/2
 % x inverse crime negeren !! (interpoleren)
@@ -31,7 +31,7 @@ name = input('Runtime name: ','s');
 curdate = make_folder();
 
 % plot ?
-plotting = true;
+plotting = false;
 
 % type
 imtype = "train";
@@ -46,6 +46,9 @@ input_args = {'Smooth', false, ...
 % grid size
 x = 100e-3;      % total grid size [m]
 y = 100e-3;      % total grid size [m]
+
+% SNR ratio
+signal_to_noise_ratio = 40;	% [dB]
 
 % -------------------------------------------- %
                 %%%%%%%%%%%%%%%%
@@ -63,15 +66,16 @@ end
 
 N_pre = size(imgset);
 
-padsize = [N_pre(1), N_pre(2)]; % padding on both sides
+padsize = [N_pre(1), N_pre(2)];             % padding on both sides
 imgset = padarray(imgset, padsize,'both');
 
 % define a Cartesian sensor mask of a centered circle with 50 sensor elements
 sensor_radius = 45e-3;      % [m]
 sensor_angle = 2*pi;        % [rad]
 sensor_pos = [0, 0];        % [m]
-num_sensor_points = 64;     % number of sensors, uniformly aligned;
-sensor.mask = makeCartCircle(sensor_radius, num_sensor_points, sensor_pos, sensor_angle);
+sensor_points = 64;     % number of sensors, uniformly aligned;
+cart_sensor_mask = makeCartCircle(sensor_radius, sensor_points, sensor_pos, sensor_angle);
+
 %sensor.frequency_response = [6.25e6, 80];   % [center freq [Hz], %]
 %sensor.directivity_angle
 %sensor.directivity_size
@@ -87,10 +91,12 @@ for n = 1:N
     clc;
     waitbar(n/N,f,sprintf('%d of %d',n,N));
     
-    n = 12; % DANGER : CHANGE
+    % n = 12; % DANGER : CHANGE
     
     p0_orig = imgset(:,:,n);
     
+    sensor.mask = cart_sensor_mask;
+
     [sensor_data,kgrid] = forward(p0_orig,...
                                   sensor,...
                                   [x,y],...
@@ -99,23 +105,22 @@ for n = 1:N
                               
     
     % add noise to the recorded sensor data
-    signal_to_noise_ratio = 40;	% [dB]
     sensor_data = addNoise(sensor_data, signal_to_noise_ratio, 'peak');
                           
-    % assign the time reversal data
-    % sensor.time_reversal_boundary_data = sensor_data;
+    % assign the time reversal data IF NOT INTERP
+    % sensor.time_reversal_boundary_data = sensor_data; 
     
     % create a binary sensor mask of an equivalent continuous circle 
     sensor_radius_grid_points = round(sensor_radius / kgrid.dx);
-    sensor.mask = makeCircle(kgrid_recon.Nx, kgrid.Ny, kgrid_recon.Nx/2 + 1, kgrid_recon.Ny/2 + 1, sensor_radius_grid_points, sensor_angle);
+    binary_sensor_mask = makeCircle(kgrid.Nx, kgrid.Ny, kgrid.Nx/2 + 1, kgrid.Ny/2 + 1, sensor_radius_grid_points, sensor_angle);
+    
+    sensor.mask = binary_sensor_mask;
     
     % interpolate data to remove the gaps and assign to sensor structure
-    sensor.time_reversal_boundary_data = interpCartData(kgrid_recon, sensor_data, cart_sensor_mask, binary_sensor_mask);
+    sensor.time_reversal_boundary_data = interpCartData(kgrid, sensor_data, cart_sensor_mask, binary_sensor_mask);
 
-    
-                             
-    [p0_recon,kgrid_recon] = backward(sensor_data,...
-                                      sensor,...
+       
+    [p0_recon,kgrid_recon] = backward(sensor,...
                                       kgrid,...
                                       [x,y],...
                                       input_args);
@@ -132,10 +137,10 @@ for n = 1:N
     
     p0_orig = unpad(p0_orig,padsize);
     p0_recon = unpad(p0_recon,padsize); 
-    p0_recon = resize(p0_recon,size(p0_orig));
+    % p0_recon = resize(p0_recon,size(p0_orig)); ONLY NECESSARY IF NOT IC
     
-    save_fbp(p0_orig,p0_recon,cur_name,curdate,imtype); 
+    p0_recon_clip = p0_recon .* (p0_recon>=0);
     
-    break
+    save_fbp(p0_orig,p0_recon_clip,cur_name,curdate,imtype);     
 end
 delete(f)

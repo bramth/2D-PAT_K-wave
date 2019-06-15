@@ -47,6 +47,9 @@ input_args = {'Smooth', false, ...
 x = 100e-3;      % total grid size [m]
 y = 100e-3;      % total grid size [m]
 
+% SNR ratio
+signal_to_noise_ratio = 40;	% [dB]
+
 % -------------------------------------------- %
                 %%%%%%%%%%%%%%%%
                 %     INIT     %
@@ -63,16 +66,16 @@ end
 
 N_pre = size(imgset);
 
-padsize = [N_pre(1), N_pre(2)]; % padding on both sides
+padsize = [N_pre(1), N_pre(2)];             % padding on both sides
 imgset = padarray(imgset, padsize,'both');
 
 % define a Cartesian sensor mask of a centered circle with 50 sensor elements
 sensor_radius = 45e-3;      % [m]
 sensor_angle = 2*pi;        % [rad]
 sensor_pos = [0, 0];        % [m]
-num_sensor_points = 64;     % number of sensors, uniformly aligned;
-cart_sensor_mask = makeCartCircle(sensor_radius, num_sensor_points, sensor_pos, sensor_angle);
-sensor.mask = cart_sensor_mask;
+sensor_points = 64;     % number of sensors, uniformly aligned;
+cart_sensor_mask = makeCartCircle(sensor_radius, sensor_points, sensor_pos, sensor_angle);
+
 %sensor.frequency_response = [6.25e6, 80];   % [center freq [Hz], %]
 %sensor.directivity_angle
 %sensor.directivity_size
@@ -86,12 +89,12 @@ f = waitbar(0,'Starting FBP...');
 N = length(imgset);
 for n = 1:N
     clc;
-    waitbar(n/N,f,sprintf('%d of %d',n,N));
-    
-    % n = 12; % DANGER : CHANGE
+    waitbar(n/N,f,sprintf('FBP simulation: %d of %d',n,N));
     
     p0_orig = imgset(:,:,n);
     
+    sensor.mask = cart_sensor_mask;
+
     [sensor_data,kgrid] = forward(p0_orig,...
                                   sensor,...
                                   [x,y],...
@@ -100,11 +103,10 @@ for n = 1:N
                               
     
     % add noise to the recorded sensor data
-    signal_to_noise_ratio = 40;	% [dB]
     sensor_data = addNoise(sensor_data, signal_to_noise_ratio, 'peak');
                           
-    % assign the time reversal data
-    % sensor.time_reversal_boundary_data = sensor_data;
+    % assign the time reversal data IF NOT INTERP
+    % sensor.time_reversal_boundary_data = sensor_data; 
     
     % create a binary sensor mask of an equivalent continuous circle 
     sensor_radius_grid_points = round(sensor_radius / kgrid.dx);
@@ -133,10 +135,12 @@ for n = 1:N
     
     p0_orig = unpad(p0_orig,padsize);
     p0_recon = unpad(p0_recon,padsize); 
-    % p0_recon = resize(p0_recon,size(p0_orig));
-    p0_recon = p0_recon * p0_recon>=0;
+
+    %p0_recon = resize(p0_recon,size(p0_orig));
     
-    save_fbp(p0_orig,p0_recon,cur_name,curdate,imtype); 
+    p0_recon_clip = p0_recon .* (p0_recon>=0);
+    
+    save_fbp(p0_orig,p0_recon_clip,cur_name,curdate,imtype);   
     
 end
 delete(f)
