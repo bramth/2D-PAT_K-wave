@@ -48,8 +48,8 @@ function [sensor_data,kgrid] = forward(p0,sensor,dim,input_args,varargin)
     medium.sound_speed = p.Results.SoundSpeed;
     
     if p.Results.Absorption == true
-        %medium.alpha_power = 1.5;      
-        %medium.alpha_coeff = 3;                     % [dB/(MHz^y cm)]
+        medium.alpha_power = 1.5;      
+        medium.alpha_coeff = 3;                     % [dB/(MHz^y cm)]
     end
 
     % create the time array
@@ -57,5 +57,7 @@ function [sensor_data,kgrid] = forward(p0,sensor,dim,input_args,varargin)
 
     % run the simulation
     sensor_data = kspaceFirstOrder2D(kgrid, medium, source, sensor,input_args{:});
+    
+    sensor_data = gather(sensor_data);
 end
 

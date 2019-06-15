@@ -1,31 +1,36 @@
-function [p0_recon,kgrid_recon] = backward(sensor_data,sensor,kgrid,dim,input_args,varargin)
+function [p0_recon,kgrid_recon] = backward(sensor,kgrid,dim,input_args,varargin)
     % Backward function
     
     p = inputParser;
     
     defaultSpeed = 1500;
     defaultAbsorption = false;
+    defaultIC = true;
     
-    addRequired(p,'sensor_data')
     addRequired(p,'sensor')
     addRequired(p,'kgrid')
     addRequired(p,'dim')
     addRequired(p,'input_args',@iscell)
     addOptional(p,'SoundSpeed',defaultSpeed,@isnumeric);
     addOptional(p,'Absorption',defaultAbsorption,@islogical);
+    addOptional(p,'InverseCrime',defaultIC,@islogical);
     
-    parse(p,sensor_data,sensor,kgrid,dim,input_args,varargin{:})
+    parse(p,sensor,kgrid,dim,input_args,varargin{:})
     
-    % add noise to the recorded sensor data
-    signal_to_noise_ratio = 40;	% [dB]
-    sensor_data = addNoise(p.Results.sensor_data, signal_to_noise_ratio, 'peak');
-
-    % create a new computation grid to avoid inverse crime
-    Nx = ceil(p.Results.kgrid.Nx/50)*50;           % number of grid points in the x direction
-    Ny = ceil(p.Results.kgrid.Ny/50)*50;           % number of grid points in the y direction
+    % optionally create a new computation grid to avoid inverse crime
+    % DOES NOT WORK AT THE MOMENT DUE TO SENSOR INTERPOLATION IN MAIN
+    % SCRIPT, NEEDING NX,NY ETC.
+    if p.Results.InverseCrime == true
+        Nx = p.Results.kgrid.Nx;
+        Ny = p.Results.kgrid.Ny;
+    elseif p.Results.InverseCrime == false
+        Nx = 2*p.Results.kgrid.Nx;           % number of grid points in the x direction
+        Ny = 2*p.Results.kgrid.Ny;           % number of grid points in the y direction
+    end
     dx = p.Results.dim(1)/Nx;          % grid point spacing in the x direction [m]
     dy = p.Results.dim(2)/Ny;          % grid point spacing in the y direction [m]
     kgrid_recon = kWaveGrid(Nx, dx, Ny, dy);
+    
 
     % use the same time array for the reconstruction
     kgrid_recon.setTime(p.Results.kgrid.Nt, p.Results.kgrid.dt);
@@ -33,9 +38,7 @@ function [p0_recon,kgrid_recon] = backward(sensor_data,sensor,kgrid,dim,input_ar
     % reset the initial pressure
     source.p0 = 0;
 
-    % assign the time reversal data
-    sensor.time_reversal_boundary_data = sensor_data;
-    
+
     % define the medium properties
     %medium.sound_speed = 1500*ones(Nx, Ny);             % [m/s]
     %medium.sound_speed(source.p0>0.02) = 1600;          % [m/s]
@@ -43,8 +46,8 @@ function [p0_recon,kgrid_recon] = backward(sensor_data,sensor,kgrid,dim,input_ar
     medium.sound_speed = p.Results.SoundSpeed;
     
     if p.Results.Absorption == true
-        %medium.alpha_power = 1.5;      
-        %medium.alpha_coeff = 3;                     % [dB/(MHz^y cm)]
+        medium.alpha_power = 1.5;      
+        medium.alpha_coeff = 3;                     % [dB/(MHz^y cm)]
         % define the cutoff frequency for the filter
         f_cutoff = 4e6;                     % [Hz]
 

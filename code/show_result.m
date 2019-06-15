@@ -12,6 +12,7 @@ function [fig] = show_result(p0_orig,kgrid,p0_recon,kgrid_recon,cart_sensor_mask
     title('Original image');
     axis image;
     colormap('parula');
+    caxis([0,0.5]);
     colorbar;
     
     subplot(1,2,2);
@@ -21,6 +22,7 @@ function [fig] = show_result(p0_orig,kgrid,p0_recon,kgrid_recon,cart_sensor_mask
     title('Reconstructed image');
     axis image;
     colormap('parula');
+    caxis([0,0.5]);
     colorbar;
     
     return
