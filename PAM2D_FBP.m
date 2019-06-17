@@ -34,7 +34,7 @@ curdate = make_folder();
 plotting = false;
 
 % type
-imtype = "train";
+imtype = "test";
 
 % set the input options
 input_args = {'Smooth', false, ...
@@ -56,18 +56,22 @@ signal_to_noise_ratio = 40;	% [dB]
                 %%%%%%%%%%%%%%%%
 
 % load the initial pressure distribution from an imageset
-data = load('data/vessel_2D_(DRIVE)/Vascular_set_c0_inhomogeneous_new_fixed_mu.mat');
+inputdata = load('data/vessel_2D_(DRIVE)/Vascular_set_c0_inhomogeneous_new_fixed_mu.mat');
 
 if imtype == "train"
-    imgset = data.Train_H;
+    imgset = inputdata.Train_H;
 elseif imtype == "test"
-    imgset = data.Test_H; 
+    imgset = inputdata.Test_H; 
 end
 
 N_pre = size(imgset);
 
 padsize = [N_pre(1), N_pre(2)];             % padding on both sides
 imgset = padarray(imgset, padsize,'both');
+
+p0_original = zeros(N_pre(3),N_pre(1),N_pre(2));
+p0_reconstruct = zeros(N_pre(3),N_pre(1),N_pre(2));
+p0_reconstruct_clip = zeros(N_pre(3),N_pre(1),N_pre(2));
 
 % define a Cartesian sensor mask of a centered circle with 50 sensor elements
 sensor_radius = 45e-3;      % [m]
@@ -76,6 +80,7 @@ sensor_pos = [0, 0];        % [m]
 sensor_points = 64;     % number of sensors, uniformly aligned;
 cart_sensor_mask = makeCartCircle(sensor_radius, sensor_points, sensor_pos, sensor_angle);
 
+% sensor directivity
 %sensor.frequency_response = [6.25e6, 80];   % [center freq [Hz], %]
 %sensor.directivity_angle
 %sensor.directivity_size
@@ -86,7 +91,7 @@ cart_sensor_mask = makeCartCircle(sensor_radius, sensor_points, sensor_pos, sens
                 %     LOOP     %
                 %%%%%%%%%%%%%%%%
 f = waitbar(0,'Starting FBP...');
-N = length(imgset);
+N = size(imgset,3);
 for n = 1:N
     clc;
     waitbar(n/N,f,sprintf('FBP simulation: %d of %d',n,N));
@@ -135,12 +140,22 @@ for n = 1:N
     
     p0_orig = unpad(p0_orig,padsize);
     p0_recon = unpad(p0_recon,padsize); 
-
+    
+    % only if not inverse-crime
     %p0_recon = resize(p0_recon,size(p0_orig));
     
     p0_recon_clip = p0_recon .* (p0_recon>=0);
     
-    save_fbp(p0_orig,p0_recon_clip,cur_name,curdate,imtype);   
+    % save fbp as png (but it scales)
+    % save_fbp(p0_orig,p0_recon_clip,cur_name,curdate,imtype);   
     
+    % store results in mat file
+    p0_original(n,:,:) = p0_orig;
+    p0_reconstruct(n,:,:) = p0_recon;
+    p0_reconstruct_clip(n,:,:) = p0_recon_clip;
 end
+
+% save fbp as mat file
+save_data(p0_original,p0_reconstruct,p0_reconstruct_clip,name,curdate,imtype);
+
 delete(f)
