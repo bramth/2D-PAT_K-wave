@@ -24,7 +24,7 @@ function [fig] = show_slice(p0_orig,kgrid,p0_recon,kgrid_recon,dim,slice_pos)
         xlabel('x-position [mm]');
     end
     ylabel('Pressure');
-    legend('Initial Pressure', 'Point Reconstruction');
+    legend('Initial Pressure', 'Reconstruction');
     axis tight;
     %set(gca, 'YLim', [0 2.1]);
 end
