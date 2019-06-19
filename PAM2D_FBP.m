@@ -35,14 +35,14 @@ name = input('Runtime name: ','s');
 curdate = make_folder();
 
 % plot ?
-plotting = true;
+plotting = false;
 
 % interpolate sensor mask ? FALSE not working at the moment.
 interpolate = true;
 
 % type ? 
-%imtype = "train";
-imtype = "test";
+imtype = "train";
+%imtype = "test";
 
 % sensorgeometry ? 
 %geometry = "center"; 
@@ -148,9 +148,8 @@ end
 cart_sensor_mask = makeCartCircle(sensor_radius, sensor_points, sensor_pos, sensor_angle);
 
 % sensor directivity
-%sensor.frequency_response = [6.25e6, 80];   % [center freq [Hz], %]
-%sensor.directivity_angle
-%sensor.directivity_size
+%sensor.directivity_angle =
+%sensor.directivity_size =
 
 sensordata = zeros(N_pre(3),sensor_points,size(kgrid.t_array,2));
 
@@ -184,6 +183,14 @@ for n = 1:N
     
     % add noise to the recorded sensor data
     sensor_data = addNoise(sensor_data, signal_to_noise_ratio, 'peak');
+    
+    % INSTEAD, filter sensor_data after full capture in sensor domain. 
+    % filter the sensor data using a Gaussian filter
+    % Fs = 1/kgrid.dt;        % [Hz]
+    % center_freq = 6.25e6;      % [Hz]
+    % bandwidth = 80;        % [%]
+    % sensor_data = gaussianFilter(sensor_data, Fs, center_freq, bandwidth);
+
     
     if interpolate == true
         % switch to binary mask
@@ -228,7 +235,6 @@ for n = 1:N
     p0_original(n,:,:) = p0_orig;
     p0_reconstruct(n,:,:) = p0_recon;
     p0_reconstruct_clip(n,:,:) = p0_recon_clip;
-    break
 end
 
 % save fbp as mat file
