@@ -5,10 +5,10 @@
 % x Make function wise as to push settings (radius, num_sensor, etc)
 % x Loop over all images
 % x Fix FBP blurriness: ?
-% - Fix FBP optical flow discrepancy due to different grid
+% x Fix FBP optical flow discrepancy due to different grid
 % x COLORBAR grenzen aanpassen
 % x interpolatie aanzetten, 64 uniform. 
-% - proberen middelpunt aan onderzijde. 
+% x proberen middelpunt aan onderzijde. 
 % x of plaatje *2, of plaatje/2
 % x inverse crime negeren !! (interpoleren)
 % -------------------------------------------- %
@@ -41,8 +41,8 @@ plotting = false;
 interpolate = true;
 
 % type ? 
-imtype = "train";
-%imtype = "test";
+%imtype = "train";
+imtype = "test";
 
 % sensorgeometry ? 
 %geometry = "center"; 
@@ -227,7 +227,7 @@ for n = 1:N
     
     p0_recon_clip = p0_recon .* (p0_recon>=0);
     
-    % save fbp as png (but it scales)
+    % save fbp as png (but it scales according to png rules)
     % save_fbp(p0_orig,p0_recon_clip,cur_name,curdate,imtype);   
     
     % store results in mat file
