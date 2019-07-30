@@ -54,6 +54,9 @@ input_args = {'Smooth', false, ...
               'PlotPML', false, ...
               'PlotSim', plotting, ...
               'DataCast','gpuArray-single'};
+              %'RecordMovie',true, ...
+              %'DataCast','single'};
+              
           
 % SNR ratio
 signal_to_noise_ratio = 40;	% [dB]
@@ -133,8 +136,8 @@ switch geometry
         
         sensor_radius = 55e-3;          % [m]
         sensor_angle = pi;              % [rad]
-        sensor_pos = [x/2-x/100, 0];    % [m] % 
-        sensor_points = 64;             % number of sensors, limited view
+        sensor_pos = [x/2-x/100, 0];    % [m] % small offset to not be outside outer edge.
+        sensor_points = 64;           % number of sensors, limited view
         
         % create a binary sensor mask of an equivalent continuous circle 
         %sensor_radius_grid_points = round(sensor_radius / kgrid.dx);
@@ -235,6 +238,7 @@ for n = 1:N
     p0_original(n,:,:) = p0_orig;
     p0_reconstruct(n,:,:) = p0_recon;
     p0_reconstruct_clip(n,:,:) = p0_recon_clip;
+    
 end
 
 % save fbp as mat file
